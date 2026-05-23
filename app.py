@@ -39,8 +39,8 @@ def load_config():
     """Load all configuration files with caching."""
     config = {
         "api_key": os.getenv("GEMINI_API_KEY", ""),
-        "model": os.getenv("LLM_MODEL", "gemini-2.0-flash"),
-        "lite_model": os.getenv("LLM_LITE_MODEL", "gemini-2.0-flash-lite"),
+        "model": os.getenv("LLM_MODEL", "gemini-2.5-flash"),
+        "lite_model": os.getenv("LLM_LITE_MODEL", "gemini-2.5-flash-lite"),
         "embedding_model": os.getenv("EMBEDDING_MODEL", "models/text-embedding-004"),
         "cache_ttl": int(os.getenv("CACHE_TTL_SECONDS", "300")),
         "log_level": os.getenv("LOG_LEVEL", "INFO"),
