@@ -653,15 +653,14 @@ class ClinicalDiagnosisSystem:
         self.llm = llm
         self.prompts = load_system_prompts().get("clinical_diagnosis", {})
 
-    def diagnose(self, symptoms: str, patient_info: dict = None,
-                 trace_id: str = "") -> dict:
-        """Token-optimized diagnosis prompt.
+    def _build_diagnosis_prompt(self, symptoms: str, patient_info: dict = None) -> str:
+        """Build token-optimized diagnosis prompt (shared between sync + stream).
         
         Before: ~600 tokens per prompt
         After: ~350 tokens per prompt (42% reduction)
         """
         system_role = self.prompts.get("role", "UAE clinical decision support")
-        prompt = f"""[INST] {system_role}
+        return f"""[INST] {system_role}
 
 Patient: {json.dumps(patient_info) if patient_info else 'Adult'}
 Symptoms: {symptoms}
@@ -675,17 +674,32 @@ Format:
 
 DISCLAIMER: AI decision support. Requires physician review. [/INST]"""
 
+    def diagnose(self, symptoms: str, patient_info: dict = None,
+                 trace_id: str = "") -> dict:
+        """Non-streaming diagnosis (for programmatic use)."""
+        prompt = self._build_diagnosis_prompt(symptoms, patient_info)
         start = time.time()
         result = self.llm.generate(prompt, subsystem="clinical_diagnosis",
                                    temperature=self.prompts.get("temperature", 0.2))
         duration = (time.time() - start) * 1000
-
         return {
             "analysis": result,
             "trace_id": trace_id,
             "duration_ms": round(duration, 1),
             "subsystem": "clinical_diagnosis",
         }
+
+    def diagnose_stream(self, symptoms: str, patient_info: dict = None,
+                        trace_id: str = "") -> Generator[str, None, str]:
+        """Stream diagnosis tokens for fast perceived response.
+        
+        Yields tokens as they arrive from Gemini — users see first
+        token in <1s instead of waiting 5-10s for the full response.
+        Calls st.write_stream() in the UI to render progressively.
+        """
+        prompt = self._build_diagnosis_prompt(symptoms, patient_info)
+        return self.llm.stream_generate(prompt, subsystem="clinical_diagnosis",
+                                        temperature=self.prompts.get("temperature", 0.2))
 
 
 # ============================================================================
@@ -755,27 +769,28 @@ class MedicalRecordsSystem:
     def __init__(self, llm: GeminiClient):
         self.llm = llm
 
-    def process(self, record_text: str, task: str = "summarize",
-                language: str = "en", trace_id: str = "") -> dict:
+    def _build_record_prompt(self, record_text: str, task: str = "summarize",
+                             language: str = "en") -> str:
+        """Build token-optimized record prompt."""
         lang_map = {"en": "", "ar": "بالعربية", "bilingual": "Arabic+English"}
         lang_instr = lang_map.get(language, "")
 
         task_prompts = {
-            "summarize": f"[INST] Summarize this medical record {lang_instr}. Output: Dx, Meds, Labs, Plan. Be concise. Record: {record_text} [/INST]",
+            "summarize": f"[INST] Summarize medical record {lang_instr}. Output: Dx, Meds, Labs, Plan. Concise. Record: {record_text} [/INST]",
             "extract": f"[INST] Extract structured data {lang_instr}. Fields: demographics, diagnoses, medications, labs, vitals, allergies. Record: {record_text} [/INST]",
             "translate": f"[INST] Medical translation {lang_instr}. Preserve: drug names, doses, clinical terms. Record: {record_text} [/INST]",
         }
+        return task_prompts.get(task, task_prompts["summarize"])
 
-        prompt = task_prompts.get(task, task_prompts["summarize"])
-
-        # Use lite model for summarization (simpler task = cheaper model)
+    def process(self, record_text: str, task: str = "summarize",
+                language: str = "en", trace_id: str = "") -> dict:
+        """Non-streaming record processing (for programmatic use)."""
+        prompt = self._build_record_prompt(record_text, task, language)
         use_lite = task == "summarize"
-
         start = time.time()
         result = self.llm.generate(prompt, subsystem="medical_records",
                                    use_lite=use_lite, temperature=0.1)
         duration = (time.time() - start) * 1000
-
         return {
             "result": result,
             "trace_id": trace_id,
@@ -783,6 +798,15 @@ class MedicalRecordsSystem:
             "model_tier": "lite" if use_lite else "flash",
             "subsystem": "medical_records",
         }
+
+    def process_stream(self, record_text: str, task: str = "summarize",
+                       language: str = "en",
+                       trace_id: str = "") -> Generator[str, None, str]:
+        """Stream record processing tokens for fast perceived response."""
+        prompt = self._build_record_prompt(record_text, task, language)
+        use_lite = task == "summarize"
+        return self.llm.stream_generate(prompt, subsystem="medical_records",
+                                        use_lite=use_lite, temperature=0.1)
 
 
 # ============================================================================
@@ -800,30 +824,40 @@ class MedicalResearchSystem:
     def __init__(self, llm: GeminiClient):
         self.llm = llm
 
-    def research(self, query: str, trace_id: str = "") -> dict:
-        prompt = f"""[INST] UAE medical research assistant.
+    def _build_research_prompt(self, query: str) -> str:
+        """Build token-optimized research prompt."""
+        return f"""[INST] UAE medical research assistant.
 
 Query: {query}
 
 Provide:
 ## Executive Summary
-## Key Findings (with evidence levels: A=RCT/meta, B=cohort, C=expert)
+## Key Findings (A=RCT/meta, B=cohort, C=expert)
 ## UAE Clinical Relevance
 ## Recommendations
 
-Cite evidence levels for each finding. [/INST]"""
+Cite evidence levels. [/INST]"""
 
+    def research(self, query: str, trace_id: str = "") -> dict:
+        """Non-streaming research (for programmatic use)."""
+        prompt = self._build_research_prompt(query)
         start = time.time()
         result = self.llm.generate(prompt, subsystem="medical_research",
                                    temperature=0.3)
         duration = (time.time() - start) * 1000
-
         return {
             "report": result,
             "trace_id": trace_id,
             "duration_ms": round(duration, 1),
             "subsystem": "medical_research",
         }
+
+    def research_stream(self, query: str,
+                        trace_id: str = "") -> Generator[str, None, str]:
+        """Stream research tokens for fast perceived response."""
+        prompt = self._build_research_prompt(query)
+        return self.llm.stream_generate(prompt, subsystem="medical_research",
+                                        temperature=0.3)
 
 
 # ============================================================================
@@ -1055,35 +1089,28 @@ with tab1:
             diagnosis_system = ClinicalDiagnosisSystem(llm)
             trace_id = f"DX-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
 
-            with st.spinner("🔄 Running diagnosis..."):
-                patient_info = {"name": patient_name, "age": patient_age,
-                                "gender": patient_gender, "additional": additional_info}
-
-                start = time.time()
-                result = diagnosis_system.diagnose(symptoms, patient_info, trace_id)
-                duration = (time.time() - start) * 1000
-
-                # Log audit
-                st.session_state.audit_logger.log(
-                    trace_id=trace_id,
-                    request_type="clinical_diagnosis",
-                    subsystem="clinical_diagnosis",
-                    duration_ms=duration,
-                    summary=f"Diagnosis for {patient_name}"
-                )
+            patient_info = {"name": patient_name, "age": patient_age,
+                            "gender": patient_gender, "additional": additional_info}
 
             st.markdown("---")
             st.markdown("### 📊 Diagnosis Results")
-            st.caption(f"Trace: {trace_id} | Response: {result['duration_ms']:.0f}ms")
 
-            col_res1, col_res2 = st.columns([3, 1])
-            with col_res1:
-                st.markdown(f'<div class="medical-card">{result["analysis"]}</div>', unsafe_allow_html=True)
-            with col_res2:
-                st.markdown("**Audit Info**")
-                st.code(f"ID: {trace_id}")
-                st.markdown(f"**⏱️ Latency:** {result['duration_ms']:.0f}ms")
-                st.markdown(f"**🤖 Model:** {CONFIG['model']}")
+            # STREAMING: Users see first token in <1s instead of waiting 5-10s
+            start = time.time()
+            result_stream = diagnosis_system.diagnose_stream(symptoms, patient_info, trace_id)
+            full_result = st.write_stream(result_stream)
+            duration = (time.time() - start) * 1000
+
+            # Log audit trail (after streaming completes)
+            st.session_state.audit_logger.log(
+                trace_id=trace_id,
+                request_type="clinical_diagnosis",
+                subsystem="clinical_diagnosis",
+                duration_ms=duration,
+                summary=f"Diagnosis for {patient_name}"
+            )
+
+            st.caption(f"Trace: {trace_id} | Latency: {duration:.0f}ms | Model: {CONFIG['model']}")
 
             st.warning("⚠️ **Physician Review Required**: This AI-assisted analysis must be reviewed by a licensed physician before any clinical decisions are made.")
 
@@ -1235,33 +1262,31 @@ Plan: Continue Topiramate 50mg BID. Add Iron supplementation. Neuro f/u in 3mo."
             lang_map = {"English": "en", "Arabic": "ar", "Bilingual (Arabic/English)": "bilingual",
                         "Arabic to English": "ar_to_en", "English to Arabic": "en_to_ar", "Bilingual": "bilingual"}
 
-            with st.spinner("🔄 Processing record..."):
-                start = time.time()
-                result = records_system.process(record_text, task=task_map[task_type],
-                                                language=lang_map[language], trace_id=trace_id)
-                duration = (time.time() - start) * 1000
-
-                st.session_state.audit_logger.log(
-                    trace_id=trace_id, request_type="medical_record",
-                    subsystem="medical_records", duration_ms=duration,
-                    summary=f"Task: {task_type}"
-                )
-
             st.markdown("---")
             st.markdown("### 📄 Processed Output")
-            st.caption(f"Trace: {trace_id} | Model: {result['model_tier']} | Latency: {result['duration_ms']:.0f}ms")
 
-            col_out1, col_out2 = st.columns([3, 1])
-            with col_out1:
-                st.markdown(f'<div class="medical-card">{result["result"]}</div>', unsafe_allow_html=True)
-            with col_out2:
-                st.markdown("**Details**")
-                st.markdown(f"- Task: {task_type}")
-                st.markdown(f"- Model: {result['model_tier']}")
-                st.markdown(f"- Time: {result['duration_ms']:.0f}ms")
-                st.download_button("📥 Download", result["result"],
-                                   file_name=f"record_{datetime.now().strftime('%Y%m%d')}.txt",
-                                   use_container_width=True)
+            # STREAMING: Users see tokens as they're generated
+            start = time.time()
+            result_stream = records_system.process_stream(
+                record_text, task=task_map[task_type],
+                language=lang_map[language], trace_id=trace_id
+            )
+            full_result = st.write_stream(result_stream)
+            duration = (time.time() - start) * 1000
+
+            model_tier = "lite" if task_map[task_type] == "summarize" else "flash"
+
+            st.session_state.audit_logger.log(
+                trace_id=trace_id, request_type="medical_record",
+                subsystem="medical_records", duration_ms=duration,
+                summary=f"Task: {task_type}"
+            )
+
+            st.caption(f"Trace: {trace_id} | Model: {model_tier} | Latency: {duration:.0f}ms")
+
+            st.download_button("📥 Download Result", full_result,
+                               file_name=f"record_{datetime.now().strftime('%Y%m%d')}.txt",
+                               use_container_width=False)
 
 # ============================================================================
 # TAB 4: APPOINTMENT MANAGEMENT
@@ -1417,30 +1442,26 @@ with tab5:
             research_system = MedicalResearchSystem(llm)
             trace_id = f"RSRCH-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
 
-            with st.spinner("🔄 Conducting research..."):
-                start = time.time()
-                result = research_system.research(research_query, trace_id)
-                duration = (time.time() - start) * 1000
-
-                st.session_state.audit_logger.log(
-                    trace_id=trace_id, request_type="research",
-                    subsystem="medical_research", duration_ms=duration,
-                    summary=f"Research: {research_query[:50]}"
-                )
-
             st.markdown("---")
             st.markdown("### 📚 Research Report")
-            st.caption(f"Trace: {trace_id} | Latency: {result['duration_ms']:.0f}ms")
 
-            col_rep1, col_rep2 = st.columns([3, 1])
-            with col_rep1:
-                st.markdown(f'<div class="medical-card">{result["report"]}</div>', unsafe_allow_html=True)
-            with col_rep2:
-                st.markdown(f"**⏱️ Time:** {result['duration_ms']:.0f}ms")
-                st.markdown(f"**🤖 Model:** {CONFIG['model']}")
-                st.download_button("📥 Download Report", result["report"],
-                                   file_name=f"research_{datetime.now().strftime('%Y%m%d')}.md",
-                                   use_container_width=True)
+            # STREAMING: Research results appear progressively
+            start = time.time()
+            result_stream = research_system.research_stream(research_query, trace_id)
+            full_result = st.write_stream(result_stream)
+            duration = (time.time() - start) * 1000
+
+            st.session_state.audit_logger.log(
+                trace_id=trace_id, request_type="research",
+                subsystem="medical_research", duration_ms=duration,
+                summary=f"Research: {research_query[:50]}"
+            )
+
+            st.caption(f"Trace: {trace_id} | Latency: {duration:.0f}ms | Model: {CONFIG['model']}")
+
+            st.download_button("📥 Download Report", full_result,
+                               file_name=f"research_{datetime.now().strftime('%Y%m%d')}.md",
+                               use_container_width=False)
 
 # ============================================================================
 # FOOTER
