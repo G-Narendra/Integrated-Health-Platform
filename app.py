@@ -27,9 +27,6 @@ from typing import Dict, Optional, List, Generator, Any
 from functools import lru_cache
 from pathlib import Path
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-
 # ============================================================================
 # CONFIGURATION LOADING
 # ============================================================================
@@ -869,8 +866,17 @@ def render_performance_dashboard(metrics: MetricsCollector):
     """Render cost and performance metrics in sidebar.
     
     Shows: latency per subsystem, cache hit rate, estimated cost saved.
+    Uses lazy import for plotly to avoid startup crashes.
     """
     with st.expander("📊 Performance & Cost", expanded=False):
+        # Lazy import plotly — only load when dashboard is expanded
+        try:
+            import plotly.express as px
+            import plotly.graph_objects as go
+            _plotly_ok = True
+        except ImportError:
+            _plotly_ok = False
+
         stats = metrics.get_stats()
         if not stats:
             st.caption("No requests yet. Run a query to see metrics.")
@@ -892,10 +898,16 @@ def render_performance_dashboard(metrics: MetricsCollector):
         if cost_data["estimated_cost_saved_usd"] > 0:
             st.success(f"💰 Estimated cost saved: ${cost_data['estimated_cost_saved_usd']:.4f}")
 
-        # Per-subsystem breakdown
+        # Per-subsystem breakdown — use plain table if plotly not installed
         st.markdown("**Per Subsystem**")
-        df = pd.DataFrame(stats).T
-        st.dataframe(df, use_container_width=True)
+        if _plotly_ok:
+            df = pd.DataFrame(stats).T
+            st.dataframe(df, use_container_width=True)
+        else:
+            # Fallback: simple text table without plotly
+            for sub, s in sorted(stats.items()):
+                st.markdown(f"**{sub}**: {s['requests']} reqs | {s['avg_latency_ms']}ms avg | {s['cache_hit_rate']}% cache | {s['error_rate']}% err")
+                st.markdown("<hr style='margin: 4px 0;'>", unsafe_allow_html=True)
 
 
 # ============================================================================
