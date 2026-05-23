@@ -1,0 +1,44 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+
+# === Virtual Environment ===
+venv/
+.env
+.venv/
+env/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === Data (local generated files - not checked in) ===
+data/chroma_db/
+data/audit.db
+data/raw/
+data/processed/
+data/vector_db/
+*.db
+
+# === Logs ===
+logs/
+*.log
+
+# === Notebooks (empty/scratch) ===
+.ipynb_checkpoints/
+
+# === Deployment Artifacts ===
+*.terraform/
+*.tfstate
+*.tfstate.backup

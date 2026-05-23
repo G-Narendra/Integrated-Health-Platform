@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "integrated-healthcare-platform"
+version = "1.0.0"
+description = "AI-powered healthcare platform for UAE - Multi-Agent + RAG + Fine-Tuning + Human-in-Loop"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Healthcare AI Team", email = "team@codebuff.com" },
+]
+keywords = ["healthcare", "ai", "uae", "rag", "multi-agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "streamlit>=1.35.0",
+    "google-generativeai>=0.8.0",
+    "chromadb>=0.5.0",
+    "pandas>=2.0.0",
+    "plotly>=5.18.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

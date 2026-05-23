@@ -1,0 +1,33 @@
+clinical_diagnosis:
+  empty_symptoms: "Please enter patient symptoms and relevant clinical information to begin the diagnosis."
+  disclaimer: "⚠️ This is AI-assisted clinical decision support. All recommendations must be reviewed and approved by a licensed physician."
+  success: "Diagnosis analysis complete. Please review the findings and exercise clinical judgment."
+  error: "Unable to complete diagnosis. Please verify patient information and try again."
+
+prescription_verification:
+  empty_drug: "Please enter the medication name to verify safety and appropriateness."
+  pharmacist_required: "⏳ This prescription has been flagged for pharmacist review. Dispensing requires licensed pharmacist approval."
+  auto_approved: "✅ Prescription verified and auto-approved based on standard safety checks."
+  error: "Unable to verify prescription. Please check the medication details and try again."
+
+medical_records:
+  empty_record: "Please paste the medical record text or select a sample record to process."
+  process_complete: "Record processed successfully. You can download the output as a text file."
+  error: "Unable to process the medical record. Please check the input format and try again."
+
+appointment_management:
+  booking_success: "✅ Appointment confirmed! Confirmation details have been logged."
+  cancellation_policy: "Cancellations require at least 2 hours notice."
+  reminder: "📅 You have an appointment tomorrow. Please confirm your attendance."
+  error: "Unable to book appointment. Please check the details and try again."
+
+medical_research:
+  empty_query: "Enter a research question to search UAE medical literature and evidence-based resources."
+  research_complete: "Research report generated. Evidence quality levels are noted for each finding."
+  error: "Unable to complete research. Please refine your query and try again."
+
+general:
+  api_key_missing: "⚠️ GEMINI_API_KEY not configured. Please enter your API key in the sidebar to enable AI features."
+  loading: "Processing your request..."
+  session_expired: "Session expired. Please refresh the page."
+  audit_logged: "Request logged to audit trail for compliance."

@@ -1,0 +1,195 @@
+[
+  {
+    "id": "CASE-001",
+    "subsystem": "clinical_diagnosis",
+    "input": {
+      "symptoms": "65-year-old male with sudden onset chest pain radiating to left arm, shortness of breath, diaphoresis. BP 160/95, HR 110, O2 Sat 91%. History of hypertension, diabetes, smoker.",
+      "patient_info": {"age": 65, "gender": "Male", "conditions": "Hypertension, Type 2 Diabetes"}
+    },
+    "expected_output": {
+      "primary_diagnosis": "Acute Coronary Syndrome / Myocardial Infarction",
+      "urgency": "EMERGENCY",
+      "key_tests": ["ECG", "Troponin", "Chest X-ray", "CBC"]
+    }
+  },
+  {
+    "id": "CASE-002",
+    "subsystem": "clinical_diagnosis",
+    "input": {
+      "symptoms": "34-year-old female with 5-day history of fever, productive cough with yellow sputum, right-sided pleuritic chest pain. Temp 38.9°C, RR 22, O2 Sat 96%.",
+      "patient_info": {"age": 34, "gender": "Female", "conditions": "None significant"}
+    },
+    "expected_output": {
+      "primary_diagnosis": "Community-Acquired Pneumonia",
+      "urgency": "URGENT",
+      "key_tests": ["Chest X-ray", "CBC", "Blood cultures", "Sputum culture"]
+    }
+  },
+  {
+    "id": "CASE-003",
+    "subsystem": "clinical_diagnosis",
+    "input": {
+      "symptoms": "28-year-old female with 2-week history of fatigue, weight loss, increased thirst and urination. Random blood glucose 280 mg/dL. BMI 31.",
+      "patient_info": {"age": 28, "gender": "Female", "family_history": "Type 2 Diabetes (mother)"}
+    },
+    "expected_output": {
+      "primary_diagnosis": "New-Onset Type 2 Diabetes Mellitus",
+      "urgency": "ROUTINE",
+      "key_tests": ["HbA1c", "Fasting glucose", "Lipid panel", "Urinalysis"]
+    }
+  },
+  {
+    "id": "PRES-001",
+    "subsystem": "prescription_verification",
+    "input": {
+      "prescription": {"drug": "Amoxicillin 500mg", "dose": "500mg", "frequency": "TID", "route": "oral", "duration": "7 days"},
+      "patient_profile": {"age": 35, "weight": 70, "allergies": "Penicillin", "conditions": "None"}
+    },
+    "expected_output": {
+      "decision": "REJECT",
+      "reason": "Patient has documented penicillin allergy",
+      "alternatives": ["Azithromycin", "Cefuroxime (with caution)"]
+    }
+  },
+  {
+    "id": "PRES-002",
+    "subsystem": "prescription_verification",
+    "input": {
+      "prescription": {"drug": "Metformin 500mg", "dose": "500mg", "frequency": "BID", "route": "oral", "duration": "30 days"},
+      "patient_profile": {"age": 52, "weight": 85, "allergies": "None", "conditions": "Type 2 Diabetes, eGFR 55"}
+    },
+    "expected_output": {
+      "decision": "PENDING_REVIEW",
+      "reason": "eGFR below 60 requires dose adjustment per MOH guidelines",
+      "recommendation": "Reduce dose or hold metformin, check renal function"
+    }
+  },
+  {
+    "id": "PRES-003",
+    "subsystem": "prescription_verification",
+    "input": {
+      "prescription": {"drug": "Paracetamol 500mg", "dose": "500mg", "frequency": "QID PRN", "route": "oral", "duration": "5 days"},
+      "patient_profile": {"age": 28, "weight": 65, "allergies": "None", "conditions": "None"}
+    },
+    "expected_output": {
+      "decision": "APPROVE",
+      "reason": "Standard dose, no contraindications",
+      "max_daily_dose": "4000mg"
+    }
+  },
+  {
+    "id": "REC-001",
+    "subsystem": "medical_records",
+    "input": {
+      "record_text": "Patient: Fatima Hassan, 45-year-old female. Diagnosis: Community-acquired pneumonia. Medications: Azithromycin 500mg daily, Paracetamol 500mg PRN. Labs: WBC 14.2, CRP 85, CXR shows right lower lobe consolidation.",
+      "task": "summarize",
+      "language": "en"
+    },
+    "expected_output": {
+      "key_elements": ["CAP diagnosis", "Azithromycin therapy", "Right lower lobe consolidation"]
+    }
+  },
+  {
+    "id": "REC-002",
+    "subsystem": "medical_records",
+    "input": {
+      "record_text": "المريض: أحمد علي، 60 سنة. التشخيص: ارتفاع ضغط الدم + داء السكري من النوع الثاني. الأدوية: ليسينوبريل 10 ملغ يومياً، ميتفورمين 850 ملغ مرتين يومياً. الفحوصات: HbA1c 8.2%، BP 145/90.",
+      "task": "translate",
+      "language": "ar_to_en"
+    },
+    "expected_output": {
+      "task_completed": "translation",
+      "key_terms_preserved": true
+    }
+  },
+  {
+    "id": "APT-001",
+    "subsystem": "appointment",
+    "input": {
+      "patient": "Saeed Al Mansouri",
+      "doctor": "Dr. Sarah Hassan (Cardiology)",
+      "department": "Cardiology",
+      "date": "2026-05-22",
+      "time": "10:30",
+      "reason": "Follow-up hypertension check"
+    },
+    "expected_output": {
+      "status": "scheduled",
+      "confirmation": true
+    }
+  },
+  {
+    "id": "RES-001",
+    "subsystem": "research",
+    "input": {
+      "query": "Latest evidence on GLP-1 receptor agonists for weight management in type 2 diabetes patients"
+    },
+    "expected_output": {
+      "evidence_level": "A",
+      "key_findings_expected": true,
+      "uae_relevance": true
+    }
+  },
+  {
+    "id": "CASE-004",
+    "subsystem": "clinical_diagnosis",
+    "input": {
+      "symptoms": "7-year-old child with high fever (39.5°C), sore throat, swollen lymph nodes, and sandpaper-like rash on torso. No cough or congestion.",
+      "patient_info": {"age": 7, "gender": "Male", "vaccinations": "Up to date"}
+    },
+    "expected_output": {
+      "primary_diagnosis": "Scarlet Fever (Group A Strep)",
+      "urgency": "URGENT",
+      "key_tests": ["Rapid Strep Test", "Throat culture"]
+    }
+  },
+  {
+    "id": "CASE-005",
+    "subsystem": "clinical_diagnosis",
+    "input": {
+      "symptoms": "55-year-old male with progressive shortness of breath on exertion, orthopnea, PND, bilateral ankle swelling. History of MI 2 years ago. BP 145/90, HR 88, bibasilar crackles.",
+      "patient_info": {"age": 55, "gender": "Male", "history": "Previous MI, Hypertension"}
+    },
+    "expected_output": {
+      "primary_diagnosis": "Congestive Heart Failure (Acute Decompensated)",
+      "urgency": "EMERGENCY",
+      "key_tests": ["BNP", "Echocardiogram", "Chest X-ray", "ECG"]
+    }
+  },
+  {
+    "id": "PRES-004",
+    "subsystem": "prescription_verification",
+    "input": {
+      "prescription": {"drug": "Warfarin 5mg", "dose": "5mg", "frequency": "Daily", "route": "oral", "duration": "6 months"},
+      "patient_profile": {"age": 68, "weight": 72, "allergies": "None", "conditions": "Atrial fibrillation, on Amiodarone"}
+    },
+    "expected_output": {
+      "decision": "PENDING_REVIEW",
+      "reason": "Amiodarone and Warfarin interaction - increased INR risk",
+      "recommendation": "Reduce warfarin dose and monitor INR closely"
+    }
+  },
+  {
+    "id": "PRES-005",
+    "subsystem": "prescription_verification",
+    "input": {
+      "prescription": {"drug": "Salbutamol Inhaler 100mcg", "dose": "100mcg", "frequency": "PRN up to QID", "route": "inhalation", "duration": "3 months"},
+      "patient_profile": {"age": 24, "weight": 60, "allergies": "None", "conditions": "Mild intermittent asthma"}
+    },
+    "expected_output": {
+      "decision": "APPROVE",
+      "reason": "Standard asthma management, appropriate first-line therapy"
+    }
+  },
+  {
+    "id": "RES-002",
+    "subsystem": "research",
+    "input": {
+      "query": "Effectiveness of school-based mental health screening programs in UAE adolescents"
+    },
+    "expected_output": {
+      "uae_specific": true,
+      "evidence_quality": "B-C"
+    }
+  }
+]

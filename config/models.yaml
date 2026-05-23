@@ -1,0 +1,52 @@
+# =============================================================================
+# Model Configuration for Integrated Healthcare Platform
+# =============================================================================
+
+llm:
+  primary:
+    provider: google
+    model: gemini-2.5-flash
+    temperature: 0.1
+    max_tokens: 4096
+
+  lite:
+    provider: google
+    model: gemini-2.5-flash-lite
+    temperature: 0.1
+    max_tokens: 2048
+
+  fallback:
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.1
+
+embedding:
+  provider: google
+  model: models/gemini-embedding-2
+  dimension: 768
+
+# =============================================================================
+# Specialized Agent Models
+# =============================================================================
+agents:
+  diagnosis:
+    model: gemini-2.5-flash
+    temperature: 0.2
+    max_iterations: 3
+
+  prescription:
+    model: gemini-2.5-flash-lite
+    temperature: 0.1
+
+  records:
+    model: gemini-2.5-flash
+    temperature: 0.1
+
+  appointment:
+    model: gemini-2.5-flash-lite
+    temperature: 0.1
+
+  research:
+    model: gemini-2.5-flash
+    temperature: 0.3
+    max_iterations: 2

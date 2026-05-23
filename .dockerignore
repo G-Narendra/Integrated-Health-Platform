@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.git/
+.gitignore
+.env
+venv/
+.venv/
+notebooks/
+deployment/
+*.md
+*.ipynb
+data/raw/
+data/processed/
+data/chroma_db/
+data/audit.db
