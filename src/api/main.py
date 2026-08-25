@@ -20,12 +20,14 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS middleware
+# CORS middleware — restrict to known origins in production.
+import os
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8501,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
